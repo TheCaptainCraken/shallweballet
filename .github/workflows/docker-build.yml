@@ -67,6 +67,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }}
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}
 
       - name: Trigger Render frontend deploy
         run: curl -s "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
