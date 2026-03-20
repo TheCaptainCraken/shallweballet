@@ -17,7 +17,7 @@ for (const key of REQUIRED_ENV_VARS) {
 
 await initDB()
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   logger.emit({
     severityNumber: SeverityNumber.INFO,
     body: "Server started",
