@@ -8,10 +8,12 @@ import { FinishModal } from "@/components/race/finish-modal"
 import { type RacerSim } from "@/components/race/race-constants"
 import { RaceProgressBar } from "@/components/race/race-progress-bar"
 import { useRacePlayer } from "@/hooks/use-race-player"
+import { useApi } from "@/lib/use-api"
 
 export default function Race() {
   const location = useLocation()
   const navigate = useNavigate()
+  const api = useApi()
   const state = (location.state ?? {}) as { characterIds?: string[] }
   const characterIds = state.characterIds ?? []
 
@@ -42,9 +44,8 @@ export default function Race() {
       return
     }
 
-    fetch(`${import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3000"}/api/race`, {
+    api("/api/race", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         racers: characterIds.map((id, i) => ({ id, lane: i })),
       }),

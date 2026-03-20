@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { CHARACTERS } from "@/lib/characters"
 import { rankTextClass } from "@/components/race/race-constants"
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3000"
+import { useApi } from "@/lib/use-api"
 
 interface AnimalStats {
   racer_id: string
@@ -84,12 +83,13 @@ function HeroCard({
 
 export default function Stats() {
   const navigate = useNavigate()
+  const api = useApi()
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [resetting, setResetting] = useState(false)
 
   function loadStats() {
-    fetch(`${BACKEND_URL}/api/stats`)
+    api("/api/stats")
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
@@ -106,7 +106,7 @@ export default function Stats() {
     if (!confirm("Reset all race history? This cannot be undone.")) return
     setResetting(true)
     try {
-      const r = await fetch(`${BACKEND_URL}/api/stats`, { method: "DELETE" })
+      const r = await api("/api/stats", { method: "DELETE" })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setStats(null)
       loadStats()

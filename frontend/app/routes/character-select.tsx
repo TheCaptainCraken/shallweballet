@@ -3,8 +3,7 @@ import { useNavigate } from "react-router"
 import { CharacterCard } from "@/components/CharacterCard"
 import { Button } from "@/components/ui/button"
 import { CHARACTERS } from "@/lib/characters"
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3000"
+import { useApi } from "@/lib/use-api"
 
 interface AnimalStreak {
   racer_id: string
@@ -18,11 +17,12 @@ interface StatsResponse {
 
 export default function CharacterSelect() {
   const navigate = useNavigate()
+  const api = useApi()
   const [selected, setSelected] = useState<string[]>([])
   const [streaks, setStreaks] = useState<Map<string, { win_streak: number; loss_streak: number }>>(new Map())
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/stats`)
+    api("/api/stats")
       .then((r) => r.json())
       .then((data: StatsResponse) => {
         const map = new Map(data.animals.map((a) => [a.racer_id, { win_streak: a.current_win_streak, loss_streak: a.current_loss_streak }]))
