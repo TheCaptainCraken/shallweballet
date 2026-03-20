@@ -13,8 +13,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { useRacePlayer } from "@/hooks/use-race-player"
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3000"
+import { useApi } from "@/lib/use-api"
 
 interface RaceDetail {
   id: number
@@ -30,12 +29,13 @@ const RANK_MEDALS = ["🥇", "🥈", "🥉"]
 export default function RaceReplay() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const api = useApi()
   const [raceData, setRaceData] = useState<RaceDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/races/${id}`)
+    api(`/api/races/${id}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()

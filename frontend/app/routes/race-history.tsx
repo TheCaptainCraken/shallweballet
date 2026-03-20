@@ -13,8 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? "http://localhost:3000"
+import { useApi } from "@/lib/use-api"
 const RACE_LENGTH = 1500
 
 interface RaceParticipant {
@@ -103,6 +102,7 @@ function HistorySkeletons() {
 
 export default function RaceHistory() {
   const navigate = useNavigate()
+  const api = useApi()
   const [races, setRaces] = useState<RaceHistoryItem[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -112,7 +112,7 @@ export default function RaceHistory() {
   const [detailCache, setDetailCache] = useState<Record<number, RaceDetail | "loading">>({})
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/races`)
+    api("/api/races")
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
@@ -128,7 +128,7 @@ export default function RaceHistory() {
   function loadMore() {
     if (!nextCursor) return
     setLoadingMore(true)
-    fetch(`${BACKEND_URL}/api/races?before=${encodeURIComponent(nextCursor)}`)
+    api(`/api/races?before=${encodeURIComponent(nextCursor)}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
@@ -149,7 +149,7 @@ export default function RaceHistory() {
     setExpandedId(race.id)
     if (detailCache[race.id]) return
     setDetailCache((prev) => ({ ...prev, [race.id]: "loading" }))
-    fetch(`${BACKEND_URL}/api/races/${race.id}`)
+    api(`/api/races/${race.id}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()

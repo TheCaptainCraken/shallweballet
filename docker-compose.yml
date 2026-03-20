@@ -27,6 +27,7 @@ services:
       context: ./frontend
       args:
         VITE_BACKEND_URL: "http://localhost:3000"
+        VITE_CLERK_PUBLISHABLE_KEY: "${VITE_CLERK_PUBLISHABLE_KEY}"
     ports:
       - "8080:8080"
     env_file:
