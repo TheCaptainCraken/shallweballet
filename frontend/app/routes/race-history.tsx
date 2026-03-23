@@ -26,6 +26,9 @@ interface RaceHistoryItem {
   id: number
   created_at: string
   has_ticks: boolean
+  org_id: number | null
+  org_name: string | null
+  can_delete: boolean
   participants: RaceParticipant[]
 }
 
@@ -110,6 +113,8 @@ export default function RaceHistory() {
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [detailCache, setDetailCache] = useState<Record<number, RaceDetail | "loading">>({})
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
     api("/api/races")
@@ -139,6 +144,21 @@ export default function RaceHistory() {
       })
       .catch((err) => setError(String(err)))
       .finally(() => setLoadingMore(false))
+  }
+
+  function handleDeleteRace(id: number) {
+    setDeletingId(id)
+    api(`/api/races/${id}`, { method: "DELETE" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        setRaces((prev) => prev.filter((race) => race.id !== id))
+        if (expandedId === id) setExpandedId(null)
+      })
+      .catch((err) => setError(String(err)))
+      .finally(() => {
+        setDeletingId(null)
+        setConfirmDeleteId(null)
+      })
   }
 
   function toggleRow(race: RaceHistoryItem) {
@@ -207,7 +227,7 @@ export default function RaceHistory() {
                     <TableHead className="w-24 text-xs tracking-widest uppercase">When</TableHead>
                     <TableHead className="text-xs tracking-widest uppercase">Result</TableHead>
                     <TableHead className="text-right text-xs tracking-widest uppercase">
-                      Replay
+                      Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -243,25 +263,70 @@ export default function RaceHistory() {
                                 </Badge>
                               )}
                               <Badge variant="secondary">{race.participants.length} racers</Badge>
+                              {race.org_name && (
+                                <Badge className="bg-violet-500/10 text-violet-600 hover:bg-violet-500/20">
+                                  🏢 {race.org_name}
+                                </Badge>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            {race.has_ticks ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  navigate(`/races/${race.id}`)
-                                }}
-                              >
-                                Replay
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="ghost" disabled>
-                                No replay
-                              </Button>
-                            )}
+                            <div className="flex items-center justify-end gap-2">
+                              {race.has_ticks ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigate(`/races/${race.id}`)
+                                  }}
+                                >
+                                  Replay
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="ghost" disabled>
+                                  No replay
+                                </Button>
+                              )}
+                              {race.can_delete &&
+                                (confirmDeleteId === race.id ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      disabled={deletingId === race.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteRace(race.id)
+                                      }}
+                                    >
+                                      {deletingId === race.id ? "Deleting…" : "Yes"}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setConfirmDeleteId(null)
+                                      }}
+                                    >
+                                      No
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setConfirmDeleteId(race.id)
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                ))}
+                            </div>
                           </TableCell>
                         </TableRow>
                         {isExpanded && (

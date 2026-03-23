@@ -70,22 +70,42 @@ export async function saveRace(
 
 export async function getRaceHistory(userId: string, before?: string, limit = 20) {
   return sql`
-    SELECT r.id, r.created_at, r.race_ticks IS NOT NULL AS has_ticks,
+    SELECT r.id, r.created_at, r.race_ticks IS NOT NULL AS has_ticks, r.org_id, o.name AS org_name,
+      (r.org_id IS NULL OR o.admin_user_id = ${userId}) AS can_delete,
       json_agg(json_build_object('racer_id', rp.racer_id, 'position', rp.position, 'lane', rp.lane)
         ORDER BY rp.position ASC) AS participants
     FROM races r
     JOIN race_participants rp ON rp.race_id = r.id
+    LEFT JOIN organizations o ON o.id = r.org_id
     WHERE r.user_id = ${userId}
       AND (${before ?? null}::text IS NULL OR r.created_at < ${before ?? null}::timestamptz)
-    GROUP BY r.id ORDER BY r.created_at DESC LIMIT ${limit}
+    GROUP BY r.id, o.name, o.admin_user_id ORDER BY r.created_at DESC LIMIT ${limit}
   ` as unknown as Promise<
     Array<{
       id: number
       created_at: string
       has_ticks: boolean
+      org_id: number | null
+      org_name: string | null
+      can_delete: boolean
       participants: Array<{ racer_id: string; position: number; lane: number }>
     }>
   >
+}
+
+export async function deleteRace(id: number, userId: string): Promise<"ok" | "not_found" | "forbidden"> {
+  const rows = (await sql`
+    SELECT r.id, r.org_id, o.admin_user_id
+    FROM races r
+    LEFT JOIN organizations o ON o.id = r.org_id
+    WHERE r.id = ${id} AND r.user_id = ${userId}
+  `) as unknown as Array<{ id: number; org_id: number | null; admin_user_id: string | null }>
+  if (rows.length === 0) return "not_found"
+  const race = rows[0]!
+  if (race.org_id !== null && race.admin_user_id !== userId) return "forbidden"
+  await sql`DELETE FROM race_participants WHERE race_id = ${id}`
+  await sql`DELETE FROM races WHERE id = ${id}`
+  return "ok"
 }
 
 export async function getRaceById(id: number, userId: string) {

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { SeverityNumber } from "@opentelemetry/api-logs";
 import { logger, tracer } from "../instrumentation";
-import { getRaceHistory, getRaceById } from "../db";
+import { getRaceHistory, getRaceById, deleteRace } from "../db";
 
 const router = Router();
 
@@ -86,6 +86,49 @@ router.get("/races/:id", async (req, res) => {
         attributes: { error: String(err) },
       });
       res.status(500).json({ error: "Failed to load race" });
+    } finally {
+      span.end();
+    }
+  });
+});
+
+router.delete("/races/:id", async (req, res) => {
+  tracer.startActiveSpan("history.delete", async (span) => {
+    try {
+      const { userId } = getAuth(req);
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: "Invalid race id" });
+        span.end();
+        return;
+      }
+
+      span.setAttribute("history.race_id", id);
+
+      const result = await deleteRace(id, userId!);
+      if (result === "not_found") {
+        res.status(404).json({ error: "Race not found" });
+        return;
+      }
+      if (result === "forbidden") {
+        res.status(403).json({ error: "Only the org admin can delete this race" });
+        return;
+      }
+
+      logger.emit({
+        severityNumber: SeverityNumber.INFO,
+        body: "Race deleted",
+        attributes: { raceId: id },
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      logger.emit({
+        severityNumber: SeverityNumber.ERROR,
+        body: "history delete error",
+        attributes: { error: String(err) },
+      });
+      res.status(500).json({ error: "Failed to delete race" });
     } finally {
       span.end();
     }
