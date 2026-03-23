@@ -30,7 +30,5 @@ services:
         VITE_CLERK_PUBLISHABLE_KEY: "${VITE_CLERK_PUBLISHABLE_KEY}"
     ports:
       - "8080:8080"
-    env_file:
-      - ./frontend/.env
     depends_on:
       - backend
