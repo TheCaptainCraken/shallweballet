@@ -9,5 +9,7 @@ export default [
     route("stats", "routes/stats.tsx"),
     route("races", "routes/race-history.tsx"),
     route("races/:id", "routes/race-replay.tsx"),
+    route("orgs", "routes/orgs.tsx"),
+    route("orgs/:id", "routes/org-detail.tsx"),
   ]),
 ] satisfies RouteConfig

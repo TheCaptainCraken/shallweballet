@@ -4,12 +4,21 @@ import { SeverityNumber } from "@opentelemetry/api-logs"
 import { logger, tracer } from "../instrumentation"
 import { simulateRace } from "../simulation/engine"
 import type { Racer } from "../simulation/types"
-import { saveRace } from "../db"
+import { saveRace, isOrgMember } from "../db"
 
 const router = Router()
 
-router.post("/race", (req, res) => {
-  const { racers } = req.body as { racers: Racer[] }
+router.post("/race", async (req, res) => {
+  const { racers, orgId } = req.body as { racers: Racer[]; orgId?: number | null }
+  const { userId } = getAuth(req)
+
+  if (orgId) {
+    const member = await isOrgMember(orgId, userId!)
+    if (!member) {
+      res.status(403).json({ error: "Not a member of this organization" })
+      return
+    }
+  }
 
   tracer.startActiveSpan("race.handle", (span) => {
     span.setAttribute("race.racer_count", racers.length)
@@ -39,8 +48,7 @@ router.post("/race", (req, res) => {
 
     span.end()
     res.json(result)
-    const { userId } = getAuth(req)
-    saveRace(racers, result.finishOrder, result.ticks, userId!).catch((err) =>
+    saveRace(racers, result.finishOrder, result.ticks, userId!, orgId ?? null).catch((err) =>
       logger.emit({ severityNumber: SeverityNumber.ERROR, body: "saveRace failed", attributes: { error: String(err) } }),
     )
   })

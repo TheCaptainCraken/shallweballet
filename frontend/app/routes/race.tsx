@@ -14,8 +14,9 @@ export default function Race() {
   const location = useLocation()
   const navigate = useNavigate()
   const api = useApi()
-  const state = (location.state ?? {}) as { characterIds?: string[] }
+  const state = (location.state ?? {}) as { characterIds?: string[]; orgId?: number | null }
   const characterIds = state.characterIds ?? []
+  const orgId = state.orgId ?? null
 
   const simRef = useRef<RacerSim[]>(
     characterIds
@@ -48,6 +49,7 @@ export default function Race() {
       method: "POST",
       body: JSON.stringify({
         racers: characterIds.map((id, i) => ({ id, lane: i })),
+        orgId,
       }),
     })
       .then((r) => r.json())

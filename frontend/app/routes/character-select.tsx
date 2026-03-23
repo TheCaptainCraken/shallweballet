@@ -15,11 +15,18 @@ interface StatsResponse {
   animals: AnimalStreak[]
 }
 
+interface OrgSummary {
+  id: number
+  name: string
+}
+
 export default function CharacterSelect() {
   const navigate = useNavigate()
   const api = useApi()
   const [selected, setSelected] = useState<string[]>([])
   const [streaks, setStreaks] = useState<Map<string, { win_streak: number; loss_streak: number }>>(new Map())
+  const [orgs, setOrgs] = useState<OrgSummary[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("")
 
   useEffect(() => {
     api("/api/stats")
@@ -28,6 +35,10 @@ export default function CharacterSelect() {
         const map = new Map(data.animals.map((a) => [a.racer_id, { win_streak: a.current_win_streak, loss_streak: a.current_loss_streak }]))
         setStreaks(map)
       })
+      .catch(() => {})
+    api("/api/orgs")
+      .then((r) => r.json())
+      .then((data: OrgSummary[]) => setOrgs(data))
       .catch(() => {})
   }, [])
 
@@ -90,12 +101,35 @@ export default function CharacterSelect() {
                 ? "Select at least one more racer"
                 : `${selected.length} / ${MAX_RACERS} racers selected`}
           </p>
-          <Button
-            disabled={selected.length < 2}
-            onClick={() => navigate("/race", { state: { characterIds: selected } })}
-          >
-            Start Race →
-          </Button>
+          <div className="flex items-center gap-3">
+            {orgs.length > 0 && (
+              <select
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
+                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Personal</option>
+                {orgs.map((org) => (
+                  <option key={org.id} value={String(org.id)}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <Button
+              disabled={selected.length < 2}
+              onClick={() =>
+                navigate("/race", {
+                  state: {
+                    characterIds: selected,
+                    orgId: selectedOrgId ? Number(selectedOrgId) : null,
+                  },
+                })
+              }
+            >
+              Start Race →
+            </Button>
+          </div>
         </div>
       </div>
     </div>

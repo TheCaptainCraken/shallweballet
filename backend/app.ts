@@ -6,10 +6,11 @@ import statusRouter from "./routes/status"
 import raceRouter from "./routes/race"
 import statsRouter from "./routes/stats"
 import historyRouter from "./routes/history"
+import orgsRouter from "./routes/orgs"
 
 const app = express()
 
-app.use(cors({ origin: CORS_ORIGIN }))
+app.use(cors({ origin: CORS_ORIGIN, allowedHeaders: ["Content-Type", "Authorization"] }))
 app.use(express.json())
 app.use(clerkMiddleware())
 
@@ -17,5 +18,6 @@ app.use("/api", statusRouter)
 app.use("/api", requireAuth(), raceRouter)
 app.use("/api", requireAuth(), statsRouter)
 app.use("/api", requireAuth(), historyRouter)
+app.use("/api", requireAuth(), orgsRouter)
 
 export default app
