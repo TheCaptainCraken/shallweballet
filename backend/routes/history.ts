@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getAuth } from "@clerk/express";
 import { SeverityNumber } from "@opentelemetry/api-logs";
 import { logger, tracer } from "../instrumentation";
 import { getRaceHistory, getRaceById } from "../db";
@@ -8,6 +9,7 @@ const router = Router();
 router.get("/races", async (req, res) => {
   tracer.startActiveSpan("history.list", async (span) => {
     try {
+      const { userId } = getAuth(req);
       const before =
         typeof req.query.before === "string" ? req.query.before : undefined;
       const limitParam = Number.parseInt(typeof req.query.limit === "string" ? req.query.limit : "20", 10);
@@ -16,7 +18,7 @@ router.get("/races", async (req, res) => {
       span.setAttribute("history.before", before ?? "");
       span.setAttribute("history.limit", limit);
 
-      const races = await getRaceHistory(before, limit);
+      const races = await getRaceHistory(userId!, before, limit);
 
       logger.emit({
         severityNumber: SeverityNumber.INFO,
@@ -44,6 +46,7 @@ router.get("/races", async (req, res) => {
 router.get("/races/:id", async (req, res) => {
   tracer.startActiveSpan("history.get", async (span) => {
     try {
+      const { userId } = getAuth(req);
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: "Invalid race id" });
@@ -52,7 +55,7 @@ router.get("/races/:id", async (req, res) => {
 
       span.setAttribute("history.race_id", id);
 
-      const race = await getRaceById(id);
+      const race = await getRaceById(id, userId!);
       if (!race) {
         res.status(404).json({ error: "Race not found" });
         return;

@@ -1,4 +1,5 @@
 import { Router } from "express"
+import { getAuth } from "@clerk/express"
 import { SeverityNumber } from "@opentelemetry/api-logs"
 import { logger, tracer } from "../instrumentation"
 import { simulateRace } from "../simulation/engine"
@@ -38,7 +39,8 @@ router.post("/race", (req, res) => {
 
     span.end()
     res.json(result)
-    saveRace(racers, result.finishOrder, result.ticks).catch((err) =>
+    const { userId } = getAuth(req)
+    saveRace(racers, result.finishOrder, result.ticks, userId!).catch((err) =>
       logger.emit({ severityNumber: SeverityNumber.ERROR, body: "saveRace failed", attributes: { error: String(err) } }),
     )
   })

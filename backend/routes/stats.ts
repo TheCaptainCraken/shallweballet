@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getAuth } from "@clerk/express";
 import { sql } from "bun";
 import { SeverityNumber } from "@opentelemetry/api-logs";
 import { logger } from "../instrumentation";
@@ -84,10 +85,11 @@ function buildAggMap(
 
 const router = Router();
 
-router.delete("/stats", async (_req, res) => {
+router.delete("/stats", async (req, res) => {
+  const { userId } = getAuth(req);
   try {
-    await sql`DELETE FROM race_participants`;
-    await sql`DELETE FROM races`;
+    await sql`DELETE FROM race_participants WHERE race_id IN (SELECT id FROM races WHERE user_id = ${userId!})`;
+    await sql`DELETE FROM races WHERE user_id = ${userId!}`;
     logger.emit({
       severityNumber: SeverityNumber.INFO,
       body: "stats reset: all races deleted",
@@ -103,7 +105,8 @@ router.delete("/stats", async (_req, res) => {
   }
 });
 
-router.get("/stats", async (_req, res) => {
+router.get("/stats", async (req, res) => {
+  const { userId } = getAuth(req);
   try {
     const aggregates = (await sql`
       SELECT
@@ -112,10 +115,12 @@ router.get("/stats", async (_req, res) => {
         COUNT(*) FILTER (WHERE rp.position < race_max.max_pos)::int AS wins,
         COUNT(*) FILTER (WHERE rp.position = race_max.max_pos)::int AS losses
       FROM race_participants rp
+      JOIN races r ON rp.race_id = r.id
       JOIN (
         SELECT race_id, MAX(position) AS max_pos
         FROM race_participants GROUP BY race_id
       ) race_max ON rp.race_id = race_max.race_id
+      WHERE r.user_id = ${userId!}
       GROUP BY rp.racer_id
     `) as unknown as Array<{
       racer_id: string;
@@ -132,6 +137,7 @@ router.get("/stats", async (_req, res) => {
         SELECT race_id, MAX(position) AS max_pos
         FROM race_participants GROUP BY race_id
       ) race_max ON rp.race_id = race_max.race_id
+      AND r.user_id = ${userId!}
       ORDER BY rp.racer_id, r.created_at ASC
     `) as unknown as Array<{
       racer_id: string;
@@ -181,7 +187,7 @@ router.get("/stats", async (_req, res) => {
     const loss_streak_holder = findBy(raced, "loss_streak", "max");
 
     const totalResult = (await sql`
-      SELECT COUNT(*)::int AS total_races_run FROM races
+      SELECT COUNT(*)::int AS total_races_run FROM races WHERE user_id = ${userId!}
     `) as unknown as Array<{ total_races_run: number }>;
     const total_races_run = totalResult[0]?.total_races_run ?? 0;
 

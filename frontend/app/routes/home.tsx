@@ -1,14 +1,30 @@
 import { useNavigate } from "react-router"
+import { useAuth, useClerk } from "@clerk/react-router"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { RaceBackground } from "@/components/RaceBackground"
 
 export default function Home() {
   const navigate = useNavigate()
+  const { isSignedIn, isLoaded } = useAuth()
+  const { signOut } = useClerk()
   return (
     <div className="flex min-h-svh flex-col items-center justify-center">
       <div className="fixed inset-0 -z-10 bg-background" />
       <RaceBackground />
+      {isLoaded && (
+        <div className="fixed top-0 right-0 p-3 z-50">
+          {isSignedIn ? (
+            <Button variant="outline" size="sm" onClick={() => signOut({ redirectUrl: "/sign-in" })}>
+              Sign Out
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => navigate("/sign-in")}>
+              Sign In
+            </Button>
+          )}
+        </div>
+      )}
       <div className="flex max-w-3xl flex-col items-center gap-6 px-6 text-center">
         <Badge
           variant="outline"

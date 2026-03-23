@@ -20,6 +20,7 @@ export async function initDB(retries = 10, delayMs = 2000) {
         )
       `
       await sql`ALTER TABLE races ADD COLUMN IF NOT EXISTS race_ticks JSONB`
+      await sql`ALTER TABLE races ADD COLUMN IF NOT EXISTS user_id TEXT`
       return
     } catch (err) {
       if (i === retries - 1) throw err
@@ -33,9 +34,10 @@ export async function saveRace(
   racers: Racer[],
   finishOrder: string[],
   ticks: Array<Record<string, number>>,
+  userId: string,
 ) {
   const [{ id: raceId }] =
-    await sql`INSERT INTO races (race_ticks) VALUES (${JSON.stringify(ticks)}) RETURNING id`
+    await sql`INSERT INTO races (race_ticks, user_id) VALUES (${JSON.stringify(ticks)}, ${userId}) RETURNING id`
 
   const participants = racers.map((racer) => ({
     race_id: raceId,
@@ -47,14 +49,15 @@ export async function saveRace(
   await sql`INSERT INTO race_participants ${sql(participants)}`
 }
 
-export async function getRaceHistory(before?: string, limit = 20) {
+export async function getRaceHistory(userId: string, before?: string, limit = 20) {
   return sql`
     SELECT r.id, r.created_at, r.race_ticks IS NOT NULL AS has_ticks,
       json_agg(json_build_object('racer_id', rp.racer_id, 'position', rp.position, 'lane', rp.lane)
         ORDER BY rp.position ASC) AS participants
     FROM races r
     JOIN race_participants rp ON rp.race_id = r.id
-    WHERE (${before ?? null}::text IS NULL OR r.created_at < ${before ?? null}::timestamptz)
+    WHERE r.user_id = ${userId}
+      AND (${before ?? null}::text IS NULL OR r.created_at < ${before ?? null}::timestamptz)
     GROUP BY r.id ORDER BY r.created_at DESC LIMIT ${limit}
   ` as unknown as Promise<
     Array<{
@@ -66,14 +69,14 @@ export async function getRaceHistory(before?: string, limit = 20) {
   >
 }
 
-export async function getRaceById(id: number) {
+export async function getRaceById(id: number, userId: string) {
   const rows = (await sql`
     SELECT r.id, r.created_at, r.race_ticks,
       json_agg(json_build_object('racer_id', rp.racer_id, 'position', rp.position, 'lane', rp.lane)
         ORDER BY rp.position ASC) AS participants
     FROM races r
     JOIN race_participants rp ON rp.race_id = r.id
-    WHERE r.id = ${id}
+    WHERE r.id = ${id} AND r.user_id = ${userId}
     GROUP BY r.id
   `) as unknown as Array<{
     id: number
