@@ -148,7 +148,7 @@ function ReplayPlayer({ raceData }: { raceData: RaceDetail }) {
 
   return (
     <div className="h-svh w-screen overflow-hidden">
-      <RaceScene simRef={simRef} runningRef={runningRef} onRaceOver={handleRaceOver} showModal={showModal} />
+      <RaceScene simRef={simRef} runningRef={runningRef} finishOrderRef={finishOrderRef} onRaceOver={handleRaceOver} showModal={showModal} />
       {countdown !== null && <CountdownOverlay value={countdown} />}
       <Scoreboard scoreboard={scoreboard} />
       {countdown === null && !showModal && <RaceProgressBar scoreboard={scoreboard} />}

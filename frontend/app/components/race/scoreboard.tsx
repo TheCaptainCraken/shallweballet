@@ -4,8 +4,8 @@ import { type RacerSim, rankTextClass, LANE_COLORS } from "./race-constants"
 export function Scoreboard({ scoreboard }: Readonly<{ scoreboard: RacerSim[] }>) {
   const sorted = [...scoreboard].sort((a, b) => {
     if (a.rank === null && b.rank === null) return b.position - a.position
-    if (a.rank === null) return -1
-    if (b.rank === null) return 1
+    if (a.rank === null) return 1
+    if (b.rank === null) return -1
     return a.rank - b.rank
   })
 
