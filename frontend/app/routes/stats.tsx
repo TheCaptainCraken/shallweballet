@@ -14,6 +14,7 @@ interface AnimalStats {
   wins: number
   losses: number
   win_rate: number
+  luck: number
   win_streak: number
   loss_streak: number
   current_win_streak: number
@@ -221,6 +222,7 @@ export default function Stats() {
                 <th className="px-4 py-3 text-center">Losses</th>
                 <th className="px-4 py-3 text-left">Win Rate</th>
                 <th className="px-4 py-3 text-left">Participation</th>
+                <th className="px-4 py-3 text-left">Luck</th>
               </tr>
             </thead>
             <tbody>
@@ -273,6 +275,17 @@ export default function Stats() {
                             <div
                               className="h-1.5 rounded-full bg-sky-400 transition-all"
                               style={{ width: `${participationPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="font-semibold text-violet-500">{animal.luck}</span>
+                          <div className="h-1.5 w-24 rounded-full bg-muted">
+                            <div
+                              className="h-1.5 rounded-full bg-violet-500 transition-all"
+                              style={{ width: `${animal.luck}%` }}
                             />
                           </div>
                         </div>

@@ -47,6 +47,7 @@ function CameraFollow({ simRef }: Readonly<{ simRef: RefObject<RacerSim[]> }>) {
 
 // ---- RacerModel — one animal in the 3D scene ----
 function RacerModel({
+  id,
   modelUrl,
   name,
   index,
@@ -54,6 +55,7 @@ function RacerModel({
   simRef,
   showModal,
 }: Readonly<{
+  id: string
   modelUrl: string
   name: string
   index: number
@@ -69,7 +71,6 @@ function RacerModel({
     null
   )
   const stoppedRef = useRef(false)
-  const [showTag, setShowTag] = useState(true)
   const [finishRank, setFinishRank] = useState<number | null>(null)
 
   useEffect(() => {
@@ -94,7 +95,6 @@ function RacerModel({
       if (!stoppedRef.current) {
         stoppedRef.current = true
         actionRef.current?.stop()
-        setShowTag(false)
         setFinishRank(racer.rank)
       }
       return
@@ -117,21 +117,9 @@ function RacerModel({
     <group ref={groupRef} position={[0, 0, z] as [number, number, number]}>
       <primitive
         object={clone}
-        rotation={[0, Math.PI / 2, 0] as [number, number, number]}
+        rotation={[0, id === "animal-crab" ? 0 : Math.PI / 2, 0] as [number, number, number]}
         scale={0.5}
       />
-      {showTag && (
-        <Html
-          position={[0, 0.8, 0] as [number, number, number]}
-          center
-          distanceFactor={12}
-          zIndexRange={[100, 0]}
-        >
-          <div className="rounded-md bg-background/50 px-4 py-0.5 text-[10px] font-semibold whitespace-nowrap text-foreground/80 shadow backdrop-blur-sm">
-            {name}
-          </div>
-        </Html>
-      )}
       {finishRank !== null && !showModal && (
         <Html
           position={[0, 1.3, 0] as [number, number, number]}
@@ -273,6 +261,7 @@ export function RaceScene({
         {racers.map((racer, i) => (
           <RacerModel
             key={racer.id}
+            id={racer.id}
             modelUrl={racer.modelUrl}
             name={racer.name}
             index={i}

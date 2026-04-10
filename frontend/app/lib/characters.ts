@@ -37,12 +37,12 @@ export const CHARACTERS: CharacterData[] = [
   },
   {
     id: "animal-panda",
-    name: "Black & White Lightning",
+    name: "Po",
     modelUrl: "/character_models/animal-panda.glb",
   },
   {
     id: "animal-penguin",
-    name: "Waddle to the Podium",
+    name: "Gunter",
     modelUrl: "/character_models/animal-penguin.glb",
   },
   {
@@ -92,7 +92,7 @@ export const CHARACTERS: CharacterData[] = [
   },
   {
     id: "animal-giraffe",
-    name: "Long Neck Lead",
+    name: "Maurizio Costanzo",
     modelUrl: "/character_models/animal-giraffe.glb",
   },
   {
@@ -112,7 +112,7 @@ export const CHARACTERS: CharacterData[] = [
   },
   {
     id: "animal-parrot",
-    name: "Polly Wants a Podium",
+    name: "Johnny the Parrot",
     modelUrl: "/character_models/animal-parrot.glb",
   },
   {

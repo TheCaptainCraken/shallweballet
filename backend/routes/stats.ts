@@ -37,6 +37,7 @@ interface AnimalStats {
   wins: number;
   losses: number;
   win_rate: number;
+  luck: number;
   win_streak: number;
   loss_streak: number;
   current_win_streak: number;
@@ -168,6 +169,7 @@ router.get("/stats", async (req, res) => {
           wins: 0,
           losses: 0,
           win_rate: 0,
+          luck: 0,
           win_streak: 0,
           loss_streak: 0,
           current_win_streak: 0,
@@ -180,6 +182,7 @@ router.get("/stats", async (req, res) => {
         wins: agg.wins,
         losses: agg.losses,
         win_rate: agg.total_races > 0 ? agg.wins / agg.total_races : 0,
+        luck: 0, // computed below
         win_streak: streak?.win_streak ?? 0,
         loss_streak: streak?.loss_streak ?? 0,
         current_win_streak: streak?.current_win_streak ?? 0,
@@ -187,7 +190,13 @@ router.get("/stats", async (req, res) => {
       };
     });
 
-    animals.sort((a, b) => b.win_rate - a.win_rate);
+    const maxRaces = Math.max(...animals.map((a) => a.total_races), 0);
+    for (const a of animals) {
+      const participationRate = maxRaces > 0 ? a.total_races / maxRaces : 0;
+      a.luck = Math.round(a.win_rate * 70 + participationRate * 30);
+    }
+
+    animals.sort((a, b) => b.luck - a.luck);
 
     const raced = animals.filter((a) => a.total_races >= 1);
     const luckiest = findBy(raced, "win_rate", "max");
