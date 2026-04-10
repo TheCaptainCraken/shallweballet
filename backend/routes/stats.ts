@@ -5,20 +5,29 @@ import { SeverityNumber } from "@opentelemetry/api-logs";
 import { logger } from "../instrumentation";
 
 const ANIMAL_IDS = [
+  "animal-beaver",
+  "animal-bee",
   "animal-bunny",
   "animal-cat",
   "animal-caterpillar",
   "animal-chick",
   "animal-cow",
+  "animal-crab",
+  "animal-deer",
   "animal-dog",
   "animal-elephant",
   "animal-fish",
+  "animal-fox",
   "animal-giraffe",
   "animal-hog",
+  "animal-koala",
   "animal-lion",
   "animal-monkey",
+  "animal-panda",
   "animal-parrot",
+  "animal-penguin",
   "animal-pig",
+  "animal-polar",
   "animal-tiger",
 ];
 
@@ -148,7 +157,7 @@ router.get("/stats", async (req, res) => {
     const streaks = computeStreaks(history);
     const aggMap = buildAggMap(aggregates);
 
-    // Merge all 15 animals
+    // Merge all 24 animals
     const animals: AnimalStats[] = ANIMAL_IDS.map((id) => {
       const agg = aggMap[id];
       const streak = streaks[id];

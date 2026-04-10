@@ -5,21 +5,15 @@ import type { Options } from "k6/options"
 const BACKEND_URL = __ENV.BACKEND_URL || "http://localhost:3000"
 
 const ANIMAL_IDS = [
-  "animal-bunny",
-  "animal-cat",
-  "animal-caterpillar",
-  "animal-chick",
-  "animal-cow",
-  "animal-dog",
-  "animal-elephant",
-  "animal-fish",
-  "animal-giraffe",
-  "animal-hog",
-  "animal-lion",
-  "animal-monkey",
-  "animal-parrot",
-  "animal-pig",
-  "animal-tiger",
+  "animal-beaver",
+  "animal-bee",
+  "animal-crab",
+  "animal-deer",
+  "animal-fox",
+  "animal-koala",
+  "animal-panda",
+  "animal-penguin",
+  "animal-polar",
 ] as const
 
 function shuffle<T>(arr: readonly T[]): T[] {

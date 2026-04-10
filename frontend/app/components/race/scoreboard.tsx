@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { type RacerSim, rankTextClass, LANE_COLORS } from "./race-constants"
+import { type RacerSim, rankTextClass } from "./race-constants"
 
 export function Scoreboard({ scoreboard }: Readonly<{ scoreboard: RacerSim[] }>) {
   const sorted = [...scoreboard].sort((a, b) => {
@@ -19,9 +19,10 @@ export function Scoreboard({ scoreboard }: Readonly<{ scoreboard: RacerSim[] }>)
           <span className={cn("w-5 shrink-0 text-right text-xs font-bold", rankTextClass(r.rank))}>
             {i + 1}
           </span>
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ backgroundColor: LANE_COLORS[r.lane] }}
+          <img
+            src={`/character_previews/${r.id}.png`}
+            alt={r.name}
+            className="h-10 w-10 shrink-0 rounded-full object-cover"
           />
           <span className="min-w-0 flex-1 truncate text-xs">{r.name}</span>
         </div>

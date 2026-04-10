@@ -1,8 +1,8 @@
-import { Canvas, useFrame } from "@react-three/fiber"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { useGLTF } from "@react-three/drei"
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js"
-import { AnimationMixer, AnimationClip } from "three"
+import { AnimationMixer, AnimationClip, Color } from "three"
 import type { Group } from "three"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -104,6 +104,18 @@ export function SpinningCharacter({
 }
 
 
+function SceneBackground({ color }: { color: string | null }) {
+  const { scene } = useThree()
+  useEffect(() => {
+    if (color) {
+      scene.background = new Color(color)
+    } else {
+      scene.background = null
+    }
+  }, [color, scene])
+  return null
+}
+
 interface CharacterCardProps {
   character: CharacterData
   selectedNumber: number | null
@@ -123,7 +135,7 @@ export function CharacterCard({
 }: Readonly<CharacterCardProps>) {
   const isSelected = selectedNumber !== null
   const [isHovered, setIsHovered] = useState(false)
-
+  const showModel = isHovered || isSelected
   const animationName = isSelected || isHovered ? "run" : "walk"
 
   return (
@@ -154,18 +166,27 @@ export function CharacterCard({
           Lane {selectedNumber}
         </Badge>
       )}
-      <div style={{ height: 180 }} className="w-full bg-foreground/5">
-        <Canvas camera={{ position: [0, 0, 3.5], fov: 55 }}>
-          <ambientLight intensity={1.2} />
-          <directionalLight position={[5, 10, 5]} intensity={1.5} />
-          <Suspense fallback={null}>
-            <SpinningCharacter
-              modelUrl={character.modelUrl}
-              animationName={animationName}
-              frozen={isHovered || isSelected}
-            />
-          </Suspense>
-        </Canvas>
+      <div style={{ height: 240 }} className="flex w-full items-center justify-center overflow-hidden bg-foreground/5">
+        {showModel ? (
+          <Canvas camera={{ position: [0, 0, 3.5], fov: 55 }}>
+            <SceneBackground color={isSelected && selectedNumber !== null ? LANE_COLORS[(selectedNumber - 1) % 10] : null} />
+            <ambientLight intensity={1.2} />
+            <directionalLight position={[5, 10, 5]} intensity={1.5} />
+            <Suspense fallback={null}>
+              <SpinningCharacter
+                modelUrl={character.modelUrl}
+                animationName={animationName}
+                frozen={isHovered || isSelected}
+              />
+            </Suspense>
+          </Canvas>
+        ) : (
+          <img
+            src={`/character_previews/${character.id}.png`}
+            alt={character.name}
+            className="h-full w-full object-contain"
+          />
+        )}
       </div>
       <div className="flex items-center gap-1.5 p-3">
         <p className="truncate text-sm font-bold leading-tight">

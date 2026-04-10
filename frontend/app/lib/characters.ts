@@ -6,78 +6,123 @@ export interface CharacterData {
 
 export const CHARACTERS: CharacterData[] = [
   {
+    id: "animal-beaver",
+    name: "Dam Fast",
+    modelUrl: "/character_models/animal-beaver.glb",
+  },
+  {
+    id: "animal-bee",
+    name: "Queen of Buzz",
+    modelUrl: "/character_models/animal-bee.glb",
+  },
+  {
+    id: "animal-crab",
+    name: "Sideways Sprinter",
+    modelUrl: "/character_models/animal-crab.glb",
+  },
+  {
+    id: "animal-deer",
+    name: "Doe or Dash",
+    modelUrl: "/character_models/animal-deer.glb",
+  },
+  {
+    id: "animal-fox",
+    name: "The Cunning One",
+    modelUrl: "/character_models/animal-fox.glb",
+  },
+  {
+    id: "animal-koala",
+    name: "Drop Bear Racer",
+    modelUrl: "/character_models/animal-koala.glb",
+  },
+  {
+    id: "animal-panda",
+    name: "Black & White Lightning",
+    modelUrl: "/character_models/animal-panda.glb",
+  },
+  {
+    id: "animal-penguin",
+    name: "Waddle to the Podium",
+    modelUrl: "/character_models/animal-penguin.glb",
+  },
+  {
+    id: "animal-polar",
+    name: "Arctic Blaze",
+    modelUrl: "/character_models/animal-polar.glb",
+  },
+  {
     id: "animal-bunny",
-    name: "Blazing Bunny",
+    name: "Hare Trigger",
     modelUrl: "/character_models/animal-bunny.glb",
   },
   {
     id: "animal-cat",
-    name: "Catastrophic Speed",
+    name: "Purrsuit Mode",
     modelUrl: "/character_models/animal-cat.glb",
   },
   {
     id: "animal-caterpillar",
-    name: "The Inching Champion",
+    name: "Slow & Furious",
     modelUrl: "/character_models/animal-caterpillar.glb",
   },
   {
     id: "animal-chick",
-    name: "Feathered Fury",
+    name: "Scrambled Speedster",
     modelUrl: "/character_models/animal-chick.glb",
   },
   {
     id: "animal-cow",
-    name: "Moo-ve Over",
+    name: "Moo-ving Fast",
     modelUrl: "/character_models/animal-cow.glb",
   },
   {
     id: "animal-dog",
-    name: "Fetch This Trophy",
+    name: "Good Boy Racer",
     modelUrl: "/character_models/animal-dog.glb",
   },
   {
     id: "animal-elephant",
-    name: "The Unstoppable Trunk",
+    name: "Trunks of Thunder",
     modelUrl: "/character_models/animal-elephant.glb",
   },
   {
     id: "animal-fish",
-    name: "Out of Water, Still Fast",
+    name: "Out of Water",
     modelUrl: "/character_models/animal-fish.glb",
   },
   {
     id: "animal-giraffe",
-    name: "Maurizio Costanzo",
+    name: "Long Neck Lead",
     modelUrl: "/character_models/animal-giraffe.glb",
   },
   {
     id: "animal-hog",
-    name: "Mud Rocket",
+    name: "Road Hog",
     modelUrl: "/character_models/animal-hog.glb",
   },
   {
     id: "animal-lion",
-    name: "The Mane Event",
+    name: "Pride of the Pack",
     modelUrl: "/character_models/animal-lion.glb",
   },
   {
     id: "animal-monkey",
-    name: "Banana Turbo",
+    name: "Barrel Roll",
     modelUrl: "/character_models/animal-monkey.glb",
   },
   {
     id: "animal-parrot",
-    name: "Johnny the Parrot",
+    name: "Polly Wants a Podium",
     modelUrl: "/character_models/animal-parrot.glb",
   },
   {
     id: "animal-pig",
-    name: "Trotter McSpeedface",
+    name: "When Pigs Fly",
     modelUrl: "/character_models/animal-pig.glb",
   },
   {
     id: "animal-tiger",
-    name: "Striped Lightning",
+    name: "Stripe Force",
     modelUrl: "/character_models/animal-tiger.glb",
   },
 ]

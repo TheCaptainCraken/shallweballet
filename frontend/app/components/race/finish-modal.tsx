@@ -47,6 +47,11 @@ export function FinishModal({
               <span className={cn("w-15 text-center text-sm font-bold", rankTextClass(i + 1))}>
                 {i === sorted.length - 1 ? "☕" : rankText(i + 1)}
               </span>
+              <img
+                src={`/character_previews/${r.id}.png`}
+                alt={r.name}
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
+              />
               <span className="flex-1 text-sm">{r.name}</span>
             </div>
           ))}

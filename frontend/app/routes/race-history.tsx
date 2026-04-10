@@ -234,11 +234,13 @@ export default function RaceHistory() {
                             <div className="flex flex-wrap items-center gap-2">
                               {winner && (
                                 <Badge className="bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/30">
+                                  <img src={`/character_previews/${winner.id}.png`} alt={winner.name} className="mr-1 inline-block h-8 w-8 rounded-full object-cover" />
                                   🥇 {winner.name}
                                 </Badge>
                               )}
                               {loser && (
                                 <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20">
+                                  <img src={`/character_previews/${loser.id}.png`} alt={loser.name} className="mr-1 inline-block h-8 w-8 rounded-full object-cover" />
                                   ☕ {loser.name}
                                 </Badge>
                               )}
@@ -337,8 +339,11 @@ function LineupTable({
                 {MEDALS[i] ?? `${i + 1}.`}
               </TableCell>
               <TableCell className={isLast ? "text-muted-foreground" : ""}>
-                {char?.name ?? p.racer_id}
-                {isLast && <span className="ml-1 text-xs">☕</span>}
+                <span className="inline-flex items-center gap-1.5">
+                  <img src={`/character_previews/${p.racer_id}.png`} alt={char?.name ?? p.racer_id} className="h-10 w-10 rounded-full object-cover" />
+                  {char?.name ?? p.racer_id}
+                  {isLast && <span className="text-xs">☕</span>}
+                </span>
               </TableCell>
               {arrivals && (
                 <TableCell className="pr-6 text-right font-mono text-sm text-muted-foreground">

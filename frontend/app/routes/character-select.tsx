@@ -62,7 +62,7 @@ export default function CharacterSelect() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pb-28 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-3 gap-4 pb-28">
           {CHARACTERS.map((character) => {
             const selectedIndex = selected.indexOf(character.id)
             const streak = streaks.get(character.id)

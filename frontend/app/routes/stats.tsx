@@ -68,7 +68,14 @@ function HeroCard({
             </Canvas>
           </div>
           <div className="flex flex-col items-center gap-1 p-3 text-center">
-            <p className="text-sm font-bold">{character.name}</p>
+            <p className="flex items-center gap-1.5 text-sm font-bold">
+              <img
+                src={`/character_previews/${character.id}.png`}
+                alt={character.name}
+                className="h-5 w-5 shrink-0 rounded-full object-cover"
+              />
+              {character.name}
+            </p>
             <p className={`text-base font-semibold ${statClass}`}>{stat}</p>
           </div>
         </>
@@ -231,6 +238,11 @@ export default function Stats() {
                       <td className="px-4 py-3 font-medium">
                         <TooltipProvider>
                           <span className="flex items-center gap-1.5">
+                            <img
+                              src={`/character_previews/${animal.racer_id}.png`}
+                              alt={character?.name ?? animal.racer_id}
+                              className="h-6 w-6 shrink-0 rounded-full object-cover"
+                            />
                             {character?.name ?? animal.racer_id}
                             <StreakBadge winStreak={animal.current_win_streak} lossStreak={animal.current_loss_streak} />
                           </span>
