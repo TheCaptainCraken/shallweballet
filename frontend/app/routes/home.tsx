@@ -13,7 +13,12 @@ export default function Home() {
       <div className="fixed inset-0 -z-10 bg-background" />
       <RaceBackground />
       {isLoaded && (
-        <div className="fixed top-0 right-0 p-3 z-50">
+        <div className="fixed top-0 right-0 p-3 z-50 flex gap-2">
+          {isSignedIn && (
+            <Button variant="outline" size="sm" onClick={() => navigate("/orgs")}>
+              Orgs
+            </Button>
+          )}
           {isSignedIn ? (
             <Button variant="outline" size="sm" onClick={() => signOut({ redirectUrl: "/sign-in" })}>
               Sign Out
