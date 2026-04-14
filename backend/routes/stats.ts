@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { getAuth } from "@clerk/express"
 import { SeverityNumber } from "@opentelemetry/api-logs"
-import { logger } from "../instrumentation"
+import { logger, tracer } from "../instrumentation"
 import { ANIMAL_IDS } from "../config"
 import { deleteUserRaces, getStatsAggregates, getStatsHistory, getTotalRacesCount } from "../db"
 
@@ -75,70 +75,97 @@ const router = Router()
 
 router.delete("/stats", async (req, res) => {
   const { userId } = getAuth(req)
-  try {
-    await deleteUserRaces(userId!)
-    logger.emit({ severityNumber: SeverityNumber.INFO, body: "stats reset: all races deleted" })
-    res.json({ ok: true })
-  } catch (err) {
-    logger.emit({ severityNumber: SeverityNumber.ERROR, body: "stats reset error", attributes: { error: String(err) } })
-    res.status(500).json({ error: "Failed to reset stats" })
-  }
+  tracer.startActiveSpan("stats.delete", async (span) => {
+    span.setAttribute("stats.user_id", userId ?? "")
+    try {
+      await deleteUserRaces(userId!)
+      logger.emit({ severityNumber: SeverityNumber.INFO, body: "stats reset: all races deleted" })
+      res.json({ ok: true })
+    } catch (err) {
+      logger.emit({ severityNumber: SeverityNumber.ERROR, body: "stats reset error", attributes: { error: String(err) } })
+      res.status(500).json({ error: "Failed to reset stats" })
+    } finally {
+      span.end()
+    }
+  })
 })
 
 router.get("/stats", async (req, res) => {
   const { userId } = getAuth(req)
-  try {
-    const [aggregates, history, total_races_run] = await Promise.all([
-      getStatsAggregates(userId!),
-      getStatsHistory(userId!),
-      getTotalRacesCount(userId!),
-    ])
+  tracer.startActiveSpan("stats.get", async (span) => {
+    span.setAttribute("stats.user_id", userId ?? "")
+    try {
+      const [aggregates, history, total_races_run] = await Promise.all([
+        getStatsAggregates(userId!),
+        getStatsHistory(userId!),
+        getTotalRacesCount(userId!),
+      ])
 
-    const streaks = computeStreaks(history)
-    const aggMap = buildAggMap(aggregates)
+      let streaks: Record<string, ReturnType<typeof racerStreaks>>
+      let aggMap: Record<string, { total_races: number; wins: number; losses: number }>
+      tracer.startActiveSpan("stats.compute_streaks", (computeSpan) => {
+        computeSpan.setAttribute("stats.racer_count", aggregates.length)
+        computeSpan.setAttribute("stats.history_rows", history.length)
+        streaks = computeStreaks(history)
+        aggMap = buildAggMap(aggregates)
+        computeSpan.end()
+      })
 
-    const animals: AnimalStats[] = ANIMAL_IDS.map((id) => {
-      const agg = aggMap[id]
-      const streak = streaks[id]
-      if (!agg) {
-        return { racer_id: id, total_races: 0, wins: 0, losses: 0, win_rate: 0, luck: 0, win_streak: 0, loss_streak: 0, current_win_streak: 0, current_loss_streak: 0 }
-      }
-      return {
-        racer_id: id,
-        total_races: agg.total_races,
-        wins: agg.wins,
-        losses: agg.losses,
-        win_rate: agg.total_races > 0 ? agg.wins / agg.total_races : 0,
-        luck: 0,
-        win_streak: streak?.win_streak ?? 0,
-        loss_streak: streak?.loss_streak ?? 0,
-        current_win_streak: streak?.current_win_streak ?? 0,
-        current_loss_streak: streak?.current_loss_streak ?? 0,
-      }
-    })
+      let animals: AnimalStats[]
+      let raced: AnimalStats[]
+      tracer.startActiveSpan("stats.build_response", (buildSpan) => {
+        animals = ANIMAL_IDS.map((id) => {
+          const agg = aggMap![id]
+          const streak = streaks![id]
+          if (!agg) {
+            return { racer_id: id, total_races: 0, wins: 0, losses: 0, win_rate: 0, luck: 0, win_streak: 0, loss_streak: 0, current_win_streak: 0, current_loss_streak: 0 }
+          }
+          return {
+            racer_id: id,
+            total_races: agg.total_races,
+            wins: agg.wins,
+            losses: agg.losses,
+            win_rate: agg.total_races > 0 ? agg.wins / agg.total_races : 0,
+            luck: 0,
+            win_streak: streak?.win_streak ?? 0,
+            loss_streak: streak?.loss_streak ?? 0,
+            current_win_streak: streak?.current_win_streak ?? 0,
+            current_loss_streak: streak?.current_loss_streak ?? 0,
+          }
+        })
 
-    const maxRaces = Math.max(...animals.map((a) => a.total_races), 0)
-    for (const a of animals) {
-      const participationRate = maxRaces > 0 ? a.total_races / maxRaces : 0
-      a.luck = Math.round(a.win_rate * 70 + participationRate * 30)
+        const maxRaces = Math.max(...animals.map((a) => a.total_races), 0)
+        for (const a of animals) {
+          const participationRate = maxRaces > 0 ? a.total_races / maxRaces : 0
+          a.luck = Math.round(a.win_rate * 70 + participationRate * 30)
+        }
+
+        animals.sort((a, b) => b.luck - a.luck)
+        raced = animals.filter((a) => a.total_races >= 1)
+
+        buildSpan.setAttribute("stats.animals_with_races", raced.length)
+        buildSpan.setAttribute("stats.total_races_run", total_races_run)
+        buildSpan.end()
+      })
+
+      span.setAttribute("stats.total_races_run", total_races_run)
+      span.setAttribute("stats.animals_with_races", raced!.length)
+
+      res.json({
+        animals: animals!,
+        luckiest: findBy(raced!, "win_rate", "max"),
+        unluckiest: findBy(raced!, "win_rate", "min"),
+        win_streak_holder: findBy(raced!, "win_streak", "max"),
+        loss_streak_holder: findBy(raced!, "loss_streak", "max"),
+        total_races_run,
+      })
+    } catch (err) {
+      logger.emit({ severityNumber: SeverityNumber.ERROR, body: "stats error", attributes: { error: String(err) } })
+      res.status(500).json({ error: "Failed to load stats" })
+    } finally {
+      span.end()
     }
-
-    animals.sort((a, b) => b.luck - a.luck)
-
-    const raced = animals.filter((a) => a.total_races >= 1)
-
-    res.json({
-      animals,
-      luckiest: findBy(raced, "win_rate", "max"),
-      unluckiest: findBy(raced, "win_rate", "min"),
-      win_streak_holder: findBy(raced, "win_streak", "max"),
-      loss_streak_holder: findBy(raced, "loss_streak", "max"),
-      total_races_run,
-    })
-  } catch (err) {
-    logger.emit({ severityNumber: SeverityNumber.ERROR, body: "stats error", attributes: { error: String(err) } })
-    res.status(500).json({ error: "Failed to load stats" })
-  }
+  })
 })
 
 export default router
