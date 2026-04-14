@@ -1,26 +1,16 @@
+import "./env" // validates all required env vars before anything else runs
 import { logger } from "./instrumentation"
 import { SeverityNumber } from "@opentelemetry/api-logs"
 import app from "./app"
-import { PORT } from "./config"
+import { env } from "./env"
 import { initDB } from "./db"
-
-const REQUIRED_ENV_VARS = ["DATABASE_URL"] as const
-for (const key of REQUIRED_ENV_VARS) {
-  if (!process.env[key]) {
-    logger.emit({
-      severityNumber: SeverityNumber.ERROR,
-      body: `Missing required environment variable: ${key}`,
-    })
-    process.exit(1)
-  }
-}
 
 await initDB()
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(env.PORT, "0.0.0.0", () => {
   logger.emit({
     severityNumber: SeverityNumber.INFO,
     body: "Server started",
-    attributes: { port: PORT },
+    attributes: { port: env.PORT },
   })
 })

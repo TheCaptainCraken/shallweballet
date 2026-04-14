@@ -61,9 +61,7 @@ router.get("/races/:id", async (req, res) => {
         return;
       }
 
-      const finish_order = [...race.participants]
-        .sort((a, b) => a.position - b.position)
-        .map((p) => p.racer_id);
+      const finish_order = race.participants.map((p) => p.racer_id);
 
       logger.emit({
         severityNumber: SeverityNumber.INFO,

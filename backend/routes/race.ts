@@ -8,8 +8,14 @@ import { saveRace } from "../db"
 
 const router = Router()
 
-router.post("/race", (req, res) => {
-  const { racers } = req.body as { racers: Racer[] }
+router.post("/race", async (req, res) => {
+  const { userId } = getAuth(req)
+  const { racers } = req.body as { racers?: Racer[] }
+
+  if (!Array.isArray(racers) || racers.length === 0) {
+    res.status(400).json({ error: "racers must be a non-empty array" })
+    return
+  }
 
   tracer.startActiveSpan("race.handle", (span) => {
     span.setAttribute("race.racer_count", racers.length)
@@ -39,7 +45,7 @@ router.post("/race", (req, res) => {
 
     span.end()
     res.json(result)
-    const { userId } = getAuth(req)
+
     saveRace(racers, result.finishOrder, result.ticks, userId!).catch((err) =>
       logger.emit({ severityNumber: SeverityNumber.ERROR, body: "saveRace failed", attributes: { error: String(err) } }),
     )

@@ -36,17 +36,62 @@ export async function saveRace(
   ticks: Array<Record<string, number>>,
   userId: string,
 ) {
-  const [{ id: raceId }] =
-    await sql`INSERT INTO races (race_ticks, user_id) VALUES (${JSON.stringify(ticks)}, ${userId}) RETURNING id`
-
   const participants = racers.map((racer) => ({
-    race_id: raceId,
     racer_id: racer.id,
     lane: racer.lane,
     position: finishOrder.indexOf(racer.id) + 1,
   }))
 
-  await sql`INSERT INTO race_participants ${sql(participants)}`
+  await sql.begin(async (tx) => {
+    const [{ id: raceId }] =
+      await tx`INSERT INTO races (race_ticks, user_id) VALUES (${JSON.stringify(ticks)}, ${userId}) RETURNING id`
+
+    await tx`INSERT INTO race_participants ${tx(participants.map((p) => ({ ...p, race_id: raceId })))}`
+  })
+}
+
+export async function deleteUserRaces(userId: string) {
+  await sql`DELETE FROM race_participants WHERE race_id IN (SELECT id FROM races WHERE user_id = ${userId})`
+  await sql`DELETE FROM races WHERE user_id = ${userId}`
+}
+
+export async function getStatsAggregates(userId: string) {
+  return sql`
+    SELECT
+      rp.racer_id,
+      COUNT(*)::int AS total_races,
+      COUNT(*) FILTER (WHERE rp.position < race_max.max_pos)::int AS wins,
+      COUNT(*) FILTER (WHERE rp.position = race_max.max_pos)::int AS losses
+    FROM race_participants rp
+    JOIN races r ON rp.race_id = r.id
+    JOIN (
+      SELECT race_id, MAX(position) AS max_pos
+      FROM race_participants GROUP BY race_id
+    ) race_max ON rp.race_id = race_max.race_id
+    WHERE r.user_id = ${userId}
+    GROUP BY rp.racer_id
+  ` as unknown as Promise<Array<{ racer_id: string; total_races: number; wins: number; losses: number }>>
+}
+
+export async function getStatsHistory(userId: string) {
+  return sql`
+    SELECT rp.racer_id, rp.position, race_max.max_pos
+    FROM race_participants rp
+    JOIN races r ON rp.race_id = r.id
+    JOIN (
+      SELECT race_id, MAX(position) AS max_pos
+      FROM race_participants GROUP BY race_id
+    ) race_max ON rp.race_id = race_max.race_id
+    AND r.user_id = ${userId}
+    ORDER BY rp.racer_id, r.created_at ASC
+  ` as unknown as Promise<Array<{ racer_id: string; position: number; max_pos: number }>>
+}
+
+export async function getTotalRacesCount(userId: string): Promise<number> {
+  const rows = (await sql`
+    SELECT COUNT(*)::int AS total FROM races WHERE user_id = ${userId}
+  `) as unknown as Array<{ total: number }>
+  return rows[0]?.total ?? 0
 }
 
 export async function getRaceHistory(userId: string, before?: string, limit = 20) {
