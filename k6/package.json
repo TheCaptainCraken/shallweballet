@@ -2,7 +2,7 @@
   "name": "k6",
   "private": true,
   "scripts": {
-    "test": "k6 run race.ts"
+    "load": "k6 run user-journey.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"
