@@ -5,100 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useApi } from "@/lib/use-api"
-const RACE_LENGTH = 1500
-
-interface RaceParticipant {
-  racer_id: string
-  position: number
-  lane: number
-}
-
-interface RaceHistoryItem {
-  id: number
-  created_at: string
-  has_ticks: boolean
-  participants: RaceParticipant[]
-}
-
-interface RaceDetail {
-  participants: RaceParticipant[]
-  ticks: Array<Record<string, number>> | null
-}
-
-interface HistoryResponse {
-  races: RaceHistoryItem[]
-  next_cursor: string | null
-}
-
-function formatRelativeDate(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const seconds = Math.floor(diff / 1000)
-  if (seconds < 60) return "just now"
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
-}
-
-/** Returns a map of racer_id → fractional arrival time (seconds), interpolated within the crossing tick. */
-function computeArrivalTicks(ticks: Array<Record<string, number>>): Record<string, number> {
-  const positions: Record<string, number> = {}
-  const arrivals: Record<string, number> = {}
-  for (let i = 0; i < ticks.length; i++) {
-    const tick = ticks[i]
-    for (const [id, speed] of Object.entries(tick)) {
-      const prev = positions[id] ?? 0
-      const next = prev + speed
-      positions[id] = next
-      if (arrivals[id] === undefined && next >= RACE_LENGTH) {
-        arrivals[id] = i + (RACE_LENGTH - prev) / speed
-      }
-    }
-  }
-  return arrivals
-}
-
-function HistorySkeletons() {
-  return (
-    <Card>
-      <Table>
-        <TableBody>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <TableRow key={i}>
-              <TableCell className="w-16">
-                <Skeleton className="h-4 w-10" />
-              </TableCell>
-              <TableCell className="w-24">
-                <Skeleton className="h-4 w-16" />
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Skeleton className="h-5 w-24 rounded-full" />
-                  <Skeleton className="h-5 w-24 rounded-full" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                <Skeleton className="ml-auto h-8 w-16 rounded-md" />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
-  )
-}
+import { formatRelativeDate } from "@/lib/race-history-utils"
+import { HistorySkeletons } from "@/components/HistorySkeletons"
+import { LineupTable } from "@/components/LineupTable"
+import type { RaceHistoryItem, RaceDetail, HistoryResponse } from "@/lib/api-types"
 
 export default function RaceHistory() {
   const navigate = useNavigate()
@@ -158,7 +70,6 @@ export default function RaceHistory() {
         setDetailCache((prev) => ({ ...prev, [race.id]: data }))
       })
       .catch(() => {
-        // fall back to list data
         setDetailCache((prev) => ({
           ...prev,
           [race.id]: { participants: race.participants, ticks: null },
@@ -222,10 +133,7 @@ export default function RaceHistory() {
 
                     return (
                       <Fragment key={race.id}>
-                        <TableRow
-                          className="cursor-pointer"
-                          onClick={() => toggleRow(race)}
-                        >
+                        <TableRow className="cursor-pointer" onClick={() => toggleRow(race)}>
                           <TableCell className="text-muted-foreground">#{race.id}</TableCell>
                           <TableCell className="text-muted-foreground">
                             {formatRelativeDate(race.created_at)}
@@ -234,13 +142,21 @@ export default function RaceHistory() {
                             <div className="flex flex-wrap items-center gap-2">
                               {winner && (
                                 <Badge className="bg-yellow-500/20 text-yellow-600 hover:bg-yellow-500/30">
-                                  <img src={`/character_previews/${winner.id}.png`} alt={winner.name} className="mr-1 inline-block h-8 w-8 rounded-full object-cover" />
+                                  <img
+                                    src={`/character_previews/${winner.id}.png`}
+                                    alt={winner.name}
+                                    className="mr-1 inline-block h-8 w-8 rounded-full object-cover"
+                                  />
                                   🥇 {winner.name}
                                 </Badge>
                               )}
                               {loser && (
                                 <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20">
-                                  <img src={`/character_previews/${loser.id}.png`} alt={loser.name} className="mr-1 inline-block h-8 w-8 rounded-full object-cover" />
+                                  <img
+                                    src={`/character_previews/${loser.id}.png`}
+                                    alt={loser.name}
+                                    className="mr-1 inline-block h-8 w-8 rounded-full object-cover"
+                                  />
                                   ☕ {loser.name}
                                 </Badge>
                               )}
@@ -300,60 +216,5 @@ export default function RaceHistory() {
         )}
       </div>
     </div>
-  )
-}
-
-const MEDALS = ["🥇", "🥈", "🥉"]
-
-function LineupTable({
-  participants,
-  ticks,
-}: {
-  participants: RaceParticipant[]
-  ticks: Array<Record<string, number>> | null
-}) {
-  const arrivals = ticks ? computeArrivalTicks(ticks) : null
-  const sorted = [...participants].sort((a, b) => a.position - b.position)
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-14 pl-6 text-xs tracking-widest uppercase">Pos</TableHead>
-          <TableHead className="text-xs tracking-widest uppercase">Racer</TableHead>
-          {arrivals && (
-            <TableHead className="text-right pr-6 text-xs tracking-widest uppercase">
-              Arrival
-            </TableHead>
-          )}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sorted.map((p, i) => {
-          const char = CHARACTERS.find((c) => c.id === p.racer_id)
-          const isLast = i === sorted.length - 1
-          const arrival = arrivals?.[p.racer_id]
-          return (
-            <TableRow key={p.racer_id} className="hover:bg-transparent">
-              <TableCell className="pl-6 font-mono text-sm text-muted-foreground">
-                {MEDALS[i] ?? `${i + 1}.`}
-              </TableCell>
-              <TableCell className={isLast ? "text-muted-foreground" : ""}>
-                <span className="inline-flex items-center gap-1.5">
-                  <img src={`/character_previews/${p.racer_id}.png`} alt={char?.name ?? p.racer_id} className="h-10 w-10 rounded-full object-cover" />
-                  {char?.name ?? p.racer_id}
-                  {isLast && <span className="text-xs">☕</span>}
-                </span>
-              </TableCell>
-              {arrivals && (
-                <TableCell className="pr-6 text-right font-mono text-sm text-muted-foreground">
-                  {arrival !== undefined ? `${arrival.toFixed(2)}s` : "—"}
-                </TableCell>
-              )}
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
   )
 }

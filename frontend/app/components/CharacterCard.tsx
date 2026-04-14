@@ -1,120 +1,16 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { useGLTF } from "@react-three/drei"
-import { Suspense, useEffect, useMemo, useRef, useState } from "react"
-import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js"
-import { AnimationMixer, AnimationClip, Color } from "three"
-import type { Group } from "three"
+import { Canvas } from "@react-three/fiber"
+import { Suspense, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { CharacterData } from "@/lib/characters"
 import { LANE_COLORS } from "@/components/race/race-constants"
+import { SpinningCharacter, SceneBackground } from "@/components/SpinningCharacter"
+import { StreakBadge } from "@/components/StreakBadge"
 
 export type { CharacterData } from "@/lib/characters"
-
-export function StreakBadge({ winStreak, lossStreak }: { winStreak: number; lossStreak: number }) {
-  return (
-    <span className="inline-flex gap-1">
-      {winStreak > 5 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="cursor-default">🔥</span>
-          </TooltipTrigger>
-          <TooltipContent>Win streak: {winStreak} in a row</TooltipContent>
-        </Tooltip>
-      )}
-      {lossStreak > 2 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="cursor-default">💀</span>
-          </TooltipTrigger>
-          <TooltipContent>Loss streak: {lossStreak} in a row</TooltipContent>
-        </Tooltip>
-      )}
-    </span>
-  )
-}
-
-export function SpinningCharacter({
-  modelUrl,
-  animationName,
-  frozen,
-}: Readonly<{
-  modelUrl: string
-  animationName: string
-  frozen: boolean
-}>) {
-  const { scene, animations } = useGLTF(modelUrl)
-  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene])
-  const groupRef = useRef<Group>(null)
-  const mixerRef = useRef<AnimationMixer | null>(null)
-  const currentActionRef = useRef<ReturnType<AnimationMixer["clipAction"]> | null>(null)
-
-  useEffect(() => {
-    if (!animations.length) return
-    const mixer = new AnimationMixer(clone)
-    mixerRef.current = mixer
-    const clip = AnimationClip.findByName(animations, "walk") ?? animations[0]
-    const action = mixer.clipAction(clip)
-    action.timeScale = 0.6
-    action.play()
-    currentActionRef.current = action
-    return () => {
-      mixer.stopAllAction()
-      mixer.uncacheRoot(clone)
-    }
-  }, [clone, animations])
-
-  useEffect(() => {
-    const mixer = mixerRef.current
-    if (!mixer || !animations.length) return
-    const clip = AnimationClip.findByName(animations, animationName) ?? AnimationClip.findByName(animations, "walk") ?? animations[0]
-    const next = mixer.clipAction(clip)
-    next.timeScale = animationName === "run" ? 0.7 : 0.6
-    if (currentActionRef.current && currentActionRef.current !== next) {
-      currentActionRef.current.crossFadeTo(next, 0.2, true)
-    }
-    next.reset().play()
-    currentActionRef.current = next
-  }, [animationName, animations])
-
-  useFrame((_, dt) => {
-    mixerRef.current?.update(dt)
-    if (!groupRef.current) return
-    if (frozen) {
-      // Normalize to [-π, π] so snap-back is at most half a turn
-      const r = groupRef.current.rotation.y
-      groupRef.current.rotation.y = r - Math.round(r / (Math.PI * 2)) * Math.PI * 2
-      groupRef.current.rotation.y *= 0.85
-    } else {
-      groupRef.current.rotation.y += dt * 0.8
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      <primitive
-        object={clone}
-        position={[0, -1, 0]}
-        rotation={[0, 0, 0]}
-        scale={1.125}
-      />
-    </group>
-  )
-}
-
-
-function SceneBackground({ color }: { color: string | null }) {
-  const { scene } = useThree()
-  useEffect(() => {
-    if (color) {
-      scene.background = new Color(color)
-    } else {
-      scene.background = null
-    }
-  }, [color, scene])
-  return null
-}
+export { StreakBadge } from "@/components/StreakBadge"
+export { SpinningCharacter } from "@/components/SpinningCharacter"
 
 interface CharacterCardProps {
   character: CharacterData
@@ -166,10 +62,19 @@ export function CharacterCard({
           Lane {selectedNumber}
         </Badge>
       )}
-      <div style={{ height: 240 }} className="flex w-full items-center justify-center overflow-hidden bg-foreground/5">
+      <div
+        style={{ height: 240 }}
+        className="flex w-full items-center justify-center overflow-hidden bg-foreground/5"
+      >
         {showModel ? (
           <Canvas camera={{ position: [0, 0, 3.5], fov: 55 }}>
-            <SceneBackground color={isSelected && selectedNumber !== null ? LANE_COLORS[(selectedNumber - 1) % 10] : null} />
+            <SceneBackground
+              color={
+                isSelected && selectedNumber !== null
+                  ? LANE_COLORS[(selectedNumber - 1) % 10]
+                  : null
+              }
+            />
             <ambientLight intensity={1.2} />
             <directionalLight position={[5, 10, 5]} intensity={1.5} />
             <Suspense fallback={null}>
@@ -189,9 +94,7 @@ export function CharacterCard({
         )}
       </div>
       <div className="flex items-center gap-1.5 p-3">
-        <p className="truncate text-sm font-bold leading-tight">
-          {character.name}
-        </p>
+        <p className="truncate text-sm font-bold leading-tight">{character.name}</p>
         <TooltipProvider>
           <StreakBadge winStreak={winStreak} lossStreak={lossStreak} />
         </TooltipProvider>

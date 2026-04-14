@@ -1,93 +1,14 @@
-import { Canvas } from "@react-three/fiber"
-import { Suspense, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { SpinningCharacter, StreakBadge } from "@/components/CharacterCard"
+import { StreakBadge } from "@/components/StreakBadge"
+import { HeroCard } from "@/components/HeroCard"
+import { StatBar } from "@/components/StatBar"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { CHARACTERS } from "@/lib/characters"
 import { rankTextClass } from "@/components/race/race-constants"
 import { useApi } from "@/lib/use-api"
-
-interface AnimalStats {
-  racer_id: string
-  total_races: number
-  wins: number
-  losses: number
-  win_rate: number
-  luck: number
-  win_streak: number
-  loss_streak: number
-  current_win_streak: number
-  current_loss_streak: number
-}
-
-interface StatsResponse {
-  animals: AnimalStats[]
-  luckiest: AnimalStats | null
-  unluckiest: AnimalStats | null
-  win_streak_holder: AnimalStats | null
-  loss_streak_holder: AnimalStats | null
-  total_races_run: number
-}
-
-function getCharacter(racerId: string) {
-  return CHARACTERS.find((c) => c.id === racerId)
-}
-
-function HeroCard({
-  label,
-  animal,
-  stat,
-  headerClass,
-  statClass,
-}: {
-  label: string
-  animal: AnimalStats | null
-  stat: string
-  headerClass: string
-  statClass: string
-}) {
-  const character = animal ? getCharacter(animal.racer_id) : null
-  return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/80">
-      <div className={`px-3 py-2 text-center text-xs font-semibold tracking-widest uppercase ${headerClass}`}>
-        {label}
-      </div>
-      {character && animal ? (
-        <>
-          <div className="h-40 w-full bg-foreground/5">
-            <Canvas camera={{ position: [0, 0, 3.5], fov: 55 }}>
-              <ambientLight intensity={1.2} />
-              <directionalLight position={[5, 10, 5]} intensity={1.5} />
-              <Suspense fallback={null}>
-                <SpinningCharacter
-                  modelUrl={character.modelUrl}
-                  animationName="walk"
-                  frozen={false}
-                />
-              </Suspense>
-            </Canvas>
-          </div>
-          <div className="flex flex-col items-center gap-1 p-3 text-center">
-            <p className="flex items-center gap-1.5 text-sm font-bold">
-              <img
-                src={`/character_previews/${character.id}.png`}
-                alt={character.name}
-                className="h-5 w-5 shrink-0 rounded-full object-cover"
-              />
-              {character.name}
-            </p>
-            <p className={`text-base font-semibold ${statClass}`}>{stat}</p>
-          </div>
-        </>
-      ) : (
-        <div className="flex h-40 items-center justify-center text-sm text-foreground/40">
-          No data yet
-        </div>
-      )}
-    </div>
-  )
-}
+import type { StatsResponse } from "@/lib/api-types"
 
 export default function Stats() {
   const navigate = useNavigate()
@@ -155,10 +76,11 @@ export default function Stats() {
     )
   }
 
+  const maxRaces = Math.max(...stats.animals.map((a) => a.total_races))
+
   return (
     <div className="min-h-svh bg-background px-4 py-6 md:px-8">
       <div className="mx-auto max-w-5xl space-y-8">
-        {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
             ← Back
@@ -178,7 +100,6 @@ export default function Stats() {
           </Button>
         </div>
 
-        {/* Hero cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <HeroCard
             label="Luckiest Animal"
@@ -190,27 +111,36 @@ export default function Stats() {
           <HeroCard
             label="Unluckiest Animal"
             animal={stats.unluckiest}
-            stat={stats.unluckiest ? `${(stats.unluckiest.win_rate * 100).toFixed(1)}% win rate` : ""}
+            stat={
+              stats.unluckiest ? `${(stats.unluckiest.win_rate * 100).toFixed(1)}% win rate` : ""
+            }
             headerClass="bg-rose-500/10 text-rose-600"
             statClass="text-rose-600"
           />
           <HeroCard
             label="Win Streak"
             animal={stats.win_streak_holder}
-            stat={stats.win_streak_holder ? `${stats.win_streak_holder.win_streak} in a row` : ""}
+            stat={
+              stats.win_streak_holder
+                ? `${stats.win_streak_holder.win_streak} in a row`
+                : ""
+            }
             headerClass="bg-yellow-500/10 text-yellow-600"
             statClass="text-yellow-600"
           />
           <HeroCard
             label="Loss Streak"
             animal={stats.loss_streak_holder}
-            stat={stats.loss_streak_holder ? `${stats.loss_streak_holder.loss_streak} in a row` : ""}
+            stat={
+              stats.loss_streak_holder
+                ? `${stats.loss_streak_holder.loss_streak} in a row`
+                : ""
+            }
             headerClass="bg-sky-500/10 text-sky-600"
             statClass="text-sky-600"
           />
         </div>
 
-        {/* Leaderboard */}
         <div className="overflow-hidden rounded-xl border border-border/50">
           <table className="w-full text-sm">
             <thead>
@@ -226,74 +156,61 @@ export default function Stats() {
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                const maxRaces = Math.max(...stats.animals.map((a) => a.total_races))
-                return stats.animals.map((animal, i) => {
-                  const character = getCharacter(animal.racer_id)
-                  const participationPct = maxRaces > 0 ? (animal.total_races / maxRaces) * 100 : 0
-                  return (
-                    <tr
-                      key={animal.racer_id}
-                      className="border-b border-border/30 last:border-0 hover:bg-foreground/5"
-                    >
-                      <td className={`px-4 py-3 font-bold ${rankTextClass(i + 1)}`}>{i + 1}</td>
-                      <td className="px-4 py-3 font-medium">
-                        <TooltipProvider>
-                          <span className="flex items-center gap-1.5">
-                            <img
-                              src={`/character_previews/${animal.racer_id}.png`}
-                              alt={character?.name ?? animal.racer_id}
-                              className="h-6 w-6 shrink-0 rounded-full object-cover"
-                            />
-                            {character?.name ?? animal.racer_id}
-                            <StreakBadge winStreak={animal.current_win_streak} lossStreak={animal.current_loss_streak} />
-                          </span>
-                        </TooltipProvider>
-                      </td>
-                      <td className="px-4 py-3 text-center text-foreground/60">{animal.total_races}</td>
-                      <td className="px-4 py-3 text-center text-foreground/60">{animal.wins}</td>
-                      <td className="px-4 py-3 text-center text-foreground/60">{animal.losses}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className={`font-semibold ${animal.win_rate >= 0.5 ? "text-emerald-600" : "text-orange-500"}`}>
-                            {(animal.win_rate * 100).toFixed(1)}%
-                          </span>
-                          <div className="h-1.5 w-24 rounded-full bg-muted">
-                            <div
-                              className={`h-1.5 rounded-full transition-all ${animal.win_rate >= 0.5 ? "bg-emerald-500" : "bg-orange-400"}`}
-                              style={{ width: `${animal.win_rate * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="font-semibold text-sky-500">
-                            {participationPct.toFixed(1)}%
-                          </span>
-                          <div className="h-1.5 w-24 rounded-full bg-muted">
-                            <div
-                              className="h-1.5 rounded-full bg-sky-400 transition-all"
-                              style={{ width: `${participationPct}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="font-semibold text-violet-500">{animal.luck}</span>
-                          <div className="h-1.5 w-24 rounded-full bg-muted">
-                            <div
-                              className="h-1.5 rounded-full bg-violet-500 transition-all"
-                              style={{ width: `${animal.luck}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              })()}
+              {stats.animals.map((animal, i) => {
+                const character = CHARACTERS.find((c) => c.id === animal.racer_id)
+                const participationPct = maxRaces > 0 ? (animal.total_races / maxRaces) * 100 : 0
+                return (
+                  <tr
+                    key={animal.racer_id}
+                    className="border-b border-border/30 last:border-0 hover:bg-foreground/5"
+                  >
+                    <td className={`px-4 py-3 font-bold ${rankTextClass(i + 1)}`}>{i + 1}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <TooltipProvider>
+                        <span className="flex items-center gap-1.5">
+                          <img
+                            src={`/character_previews/${animal.racer_id}.png`}
+                            alt={character?.name ?? animal.racer_id}
+                            className="h-6 w-6 shrink-0 rounded-full object-cover"
+                          />
+                          {character?.name ?? animal.racer_id}
+                          <StreakBadge
+                            winStreak={animal.current_win_streak}
+                            lossStreak={animal.current_loss_streak}
+                          />
+                        </span>
+                      </TooltipProvider>
+                    </td>
+                    <td className="px-4 py-3 text-center text-foreground/60">{animal.total_races}</td>
+                    <td className="px-4 py-3 text-center text-foreground/60">{animal.wins}</td>
+                    <td className="px-4 py-3 text-center text-foreground/60">{animal.losses}</td>
+                    <td className="px-4 py-3">
+                      <StatBar
+                        value={`${(animal.win_rate * 100).toFixed(1)}%`}
+                        pct={animal.win_rate * 100}
+                        valueClass={animal.win_rate >= 0.5 ? "text-emerald-600" : "text-orange-500"}
+                        barClass={animal.win_rate >= 0.5 ? "bg-emerald-500" : "bg-orange-400"}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatBar
+                        value={`${participationPct.toFixed(1)}%`}
+                        pct={participationPct}
+                        valueClass="text-sky-500"
+                        barClass="bg-sky-400"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatBar
+                        value={String(animal.luck)}
+                        pct={animal.luck}
+                        valueClass="text-violet-500"
+                        barClass="bg-violet-500"
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

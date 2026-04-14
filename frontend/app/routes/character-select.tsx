@@ -4,16 +4,7 @@ import { CharacterCard } from "@/components/CharacterCard"
 import { Button } from "@/components/ui/button"
 import { CHARACTERS } from "@/lib/characters"
 import { useApi } from "@/lib/use-api"
-
-interface AnimalStreak {
-  racer_id: string
-  current_win_streak: number
-  current_loss_streak: number
-}
-
-interface StatsResponse {
-  animals: AnimalStreak[]
-}
+import type { StatsResponse } from "@/lib/api-types"
 
 export default function CharacterSelect() {
   const navigate = useNavigate()
